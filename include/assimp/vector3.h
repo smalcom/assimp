@@ -98,6 +98,24 @@ public:
     operator aiVector3t<TOther> () const;
 
 public:
+
+    /** @fn static aiVector3t* CopyOfArray(const aiVector3t* const pSrc, const size_t pElCnt)
+     * Check source array and create copy of it.
+     * @param [in] pSrc - source array of objects.
+     * @param [in] pElCnt - count of objects in source array.
+     * @return nullptr if source has no data, else - pointer to copy of pSrcVec3D. */
+    static aiVector3t* CopyOfArray(const aiVector3t* const pSrc, const size_t pElCnt)
+    {
+        if((pSrc == nullptr) || (pElCnt == 0)) return nullptr;
+
+        size_t idx = 0;
+        aiVector3t* dst = new aiVector3t[pElCnt];
+
+        do { dst[idx] = pSrc[idx]; } while(++idx < pElCnt);
+
+        return dst;
+    }
+
     /** @brief Set the components of a vector
      *  @param pX X component
      *  @param pY Y component

@@ -441,7 +441,7 @@ void SceneCombiner::MergeScenes(aiScene** _dest, aiScene* master, std::vector<At
             {
                 if (n != duplicates[n]) {
                     if ( flags & AI_INT_MERGE_SCENE_DUPLICATES_DEEP_CPY)
-                        Copy(pip, (*cur)->mMeshes[i]);
+                        *pip = new aiMesh((*cur)->mMeshes[i]);
 
                     else continue;
                 }
@@ -957,20 +957,6 @@ void SceneCombiner::MergeMaterials(aiMaterial** dest,
 // ------------------------------------------------------------------------------------------------
 template <typename Type>
 inline
-void CopyPtrArray (Type**& dest, const Type* const * src, ai_uint num) {
-    if (!num) {
-        dest = NULL;
-        return;
-    }
-    dest = new Type*[num];
-    for (ai_uint i = 0; i < num;++i) {
-        SceneCombiner::Copy(&dest[i],src[i]);
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
-template <typename Type>
-inline
 void GetArrayCopy(Type*& dest, ai_uint num ) {
     if ( !dest ) {
         return;
@@ -980,6 +966,25 @@ void GetArrayCopy(Type*& dest, ai_uint num ) {
     dest = new Type[num];
     ::memcpy((void*)dest, old, sizeof(Type) * num);
 }
+
+/// \fn template<typename TObject> inline TObject* CopyObjArray(const TObject* const pSrc, const size_t pElCnt)
+/// Check source array of objects and create copy of it. For copiying assignment operator is used, so assignment operator must be defined for TObject.
+/// \param [in] pSrc - source array of objects.
+/// \param [in] pElCnt - count of objects in source array.
+/// \return nullptr if source has no data, else - pointer to copy of pSrcVec3D. */
+template<typename TObject>
+inline TObject* CopyObjArray(const TObject* const pSrc, const size_t pElCnt)
+{
+    if((pSrc == nullptr) || (pElCnt == 0)) return nullptr;
+
+    size_t idx = 0;
+    TObject* dst = new TObject[pElCnt];
+
+    do { dst[idx] = pSrc[idx]; } while(++idx < pElCnt);
+
+    return dst;
+}
+
 
 // ------------------------------------------------------------------------------------------------
 void SceneCombiner::CopySceneFlat(aiScene** _dest,const aiScene* src) {
@@ -1055,45 +1060,6 @@ void SceneCombiner::CopyScene(aiScene** _dest,const aiScene* src,bool allocate) 
     if (dest->mPrivate != NULL) {
         ScenePriv(dest)->mPPStepsApplied = ScenePriv(src) ? ScenePriv(src)->mPPStepsApplied : 0;
     }
-}
-
-// ------------------------------------------------------------------------------------------------
-void SceneCombiner::Copy( aiMesh** _dest, const aiMesh* src ) {
-    if ( nullptr == _dest || nullptr == src ) {
-        return;
-    }
-
-    aiMesh* dest = *_dest = new aiMesh();
-
-    // get a flat copy
-    ::memcpy((void*)dest,src,sizeof(aiMesh));
-
-    // and reallocate all arrays
-    GetArrayCopy( dest->mVertices,   dest->mNumVertices );
-    GetArrayCopy( dest->mNormals ,   dest->mNumVertices );
-    GetArrayCopy( dest->mTangents,   dest->mNumVertices );
-    GetArrayCopy( dest->mBitangents, dest->mNumVertices );
-
-    unsigned int n = 0;
-    while (dest->HasTextureCoords(n))
-        GetArrayCopy( dest->mTextureCoords[n++],   dest->mNumVertices );
-
-    n = 0;
-    while (dest->HasVertexColors(n))
-        GetArrayCopy( dest->mColors[n++],   dest->mNumVertices );
-
-    // make a deep copy of all bones
-    CopyPtrArray(dest->mBones,dest->mBones,dest->mNumBones);
-
-    // make a deep copy of all faces
-    GetArrayCopy(dest->mFaces,dest->mNumFaces);
-    for (unsigned int i = 0; i < dest->mNumFaces;++i) {
-        aiFace& f = dest->mFaces[i];
-        GetArrayCopy(f.mIndices,f.mNumIndices);
-    }
-
-    // make a deep copy of all blend shapes
-    CopyPtrArray(dest->mAnimMeshes, dest->mAnimMeshes, dest->mNumAnimMeshes);
 }
 
 // ------------------------------------------------------------------------------------------------

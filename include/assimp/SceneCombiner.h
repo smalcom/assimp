@@ -356,13 +356,6 @@ public:
 
 
     // -------------------------------------------------------------------
-    /** Get a deep copy of a mesh
-     *
-     *  @param dest Receives a pointer to the destination mesh
-     *  @param src Source mesh - remains unmodified.
-     */
-    static void Copy     (aiMesh** dest, const aiMesh* src);
-
     // similar to Copy():
     static void Copy  (aiAnimMesh** dest, const aiAnimMesh* src);
     static void Copy  (aiMaterial** dest, const aiMaterial* src);

@@ -87,6 +87,23 @@ public:
 
 public:
 
+    /// \fn static aiColor4t* CopyOfArray(const aiColor4t* const pSrc, const size_t pElCnt)
+    /// Check source array and create copy of it.
+    /// \param [in] pSrc - source array of objects.
+    /// \param [in] pElCnt - count of objects in source array.
+    /// \return nullptr if source has no data, else - pointer to copy of pSrcVec3D. */
+    static aiColor4t* CopyOfArray(const aiColor4t* const pSrc, const size_t pElCnt)
+    {
+        if((pSrc == nullptr) || (pElCnt == 0)) return nullptr;
+
+        size_t idx = 0;
+        aiColor4t* dst = new aiColor4t[pElCnt];
+
+        do { dst[idx] = pSrc[idx]; } while(++idx < pElCnt);
+
+        return dst;
+    }
+
     // Red, green, blue and alpha color values
     TReal r, g, b, a;
 };  // !struct aiColor4D

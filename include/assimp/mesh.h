@@ -162,12 +162,14 @@ struct aiFace
             return *this;
         }
 
-        delete[] mIndices;
-        mNumIndices = o.mNumIndices;
-        if (mNumIndices) {
+        if(mIndices != nullptr) delete[] mIndices;
+
+        if ((o.mNumIndices > 0) && (o.mIndices != nullptr)) {
+            mNumIndices = o.mNumIndices;
             mIndices = new unsigned int[mNumIndices];
             ::memcpy( mIndices, o.mIndices, mNumIndices * sizeof( unsigned int));
         } else {
+            mNumIndices = 0;
             mIndices = nullptr;
         }
 
@@ -202,6 +204,23 @@ struct aiFace
     //! array of two faces is NOT identical
     bool operator != (const aiFace& o) const {
         return !(*this == o);
+    }
+
+    /// \fn static aiFace* CopyOfArray(const aiFace* const pSrc, const size_t pElCnt)
+    /// Check source array and create copy of it.
+    /// \param [in] pSrc - source array of objects.
+    /// \param [in] pElCnt - count of objects in source array.
+    /// \return nullptr if source has no data, else - pointer to copy of pSrcVec3D. */
+    static aiFace* CopyOfArray(const aiFace* const pSrc, const size_t pElCnt)
+    {
+        if((pSrc == nullptr) || (pElCnt == 0)) return nullptr;
+
+        size_t idx = 0;
+        aiFace* dst = new aiFace[pElCnt];
+
+        do { dst[idx] = pSrc[idx]; } while(++idx < pElCnt);
+
+        return dst;
     }
 #endif // __cplusplus
 }; // struct aiFace
@@ -344,6 +363,26 @@ struct aiBone {
     ~aiBone() {
         delete [] mWeights;
     }
+
+    /// \fn static aiBone** CopyOfArrayPtr(aiBone** pSrc, const size_t pElCnt)
+    /// Check source array and create copy of it.
+    /// \param [in] pSrc - source array of pointer to objects.
+    /// \param [in] pElCnt - count of objects in source array.
+    /// \return nullptr if source has no data, else - pointer to copy of pSrcVec3D. */
+    static aiBone** CopyOfArrayPtr(aiBone** pSrc, const size_t pElCnt)
+    {
+        if((pSrc == nullptr) || (pElCnt == 0)) return nullptr;
+
+        size_t idx = 0;
+        aiBone** dst = new aiBone*[pElCnt];
+
+        do
+        {
+            dst[idx] = new aiBone(*pSrc[idx]);
+        } while(++idx < pElCnt);
+
+        return dst;
+    }
 #endif // __cplusplus
 };
 
@@ -450,9 +489,9 @@ struct aiAnimMesh
      * from language bindings.
      */
     unsigned int mNumVertices;
-    
-    /** 
-     * Weight of the AnimMesh. 
+
+    /**
+     * Weight of the AnimMesh.
      */
     float mWeight;
 
@@ -489,6 +528,26 @@ struct aiAnimMesh
         for( unsigned int a = 0; a < AI_MAX_NUMBER_OF_COLOR_SETS; a++) {
             delete [] mColors[a];
         }
+    }
+
+    /// \fn static aiAnimMesh** CopyOfArrayPtr(aiAnimMesh** pSrc, const size_t pElCnt)
+    /// Check source array and create copy of it.
+    /// \param [in] pSrc - source array of pointer to objects.
+    /// \param [in] pElCnt - count of objects in source array.
+    /// \return nullptr if source has no data, else - pointer to copy of pSrcVec3D. */
+    static aiAnimMesh** CopyOfArrayPtr(aiAnimMesh** pSrc, const size_t pElCnt)
+    {
+        if((pSrc == nullptr) || (pElCnt == 0)) return nullptr;
+
+        size_t idx = 0;
+        aiAnimMesh** dst = new aiAnimMesh*[pElCnt];
+
+        do
+        {
+            dst[idx] = new aiAnimMesh(*pSrc[idx]);
+        } while(++idx < pElCnt);
+
+        return dst;
     }
 
     /** Check whether the anim mesh overrides the vertex positions
@@ -711,8 +770,8 @@ struct aiMesh
      *  Note! Currently only works with Collada loader.*/
     C_STRUCT aiAnimMesh** mAnimMeshes;
 
-    /** 
-     *  Method of morphing when animeshes are specified. 
+    /**
+     *  Method of morphing when animeshes are specified.
      */
     unsigned int mMethod;
 
@@ -720,7 +779,7 @@ struct aiMesh
      *
      */
     C_STRUCT aiAABB mAABB;
-	
+
 #ifdef __cplusplus
 
     //! Default constructor. Initializes all members to 0
@@ -753,35 +812,83 @@ struct aiMesh
         }
     }
 
-    //! Deletes all storage allocated for the mesh
-    ~aiMesh() {
-        delete [] mVertices;
-        delete [] mNormals;
-        delete [] mTangents;
-        delete [] mBitangents;
-        for( unsigned int a = 0; a < AI_MAX_NUMBER_OF_TEXTURECOORDS; a++) {
-            delete [] mTextureCoords[a];
-        }
-        for( unsigned int a = 0; a < AI_MAX_NUMBER_OF_COLOR_SETS; a++) {
-            delete [] mColors[a];
+    ///! \fn explicit aiMesh(const aiMesh* const pSrcMesh)
+    /// Copy constructor.
+    /// \param [in] pSrcMesh - pointer to source mesh.
+    explicit aiMesh(const aiMesh* const pSrcMesh)
+    {
+        size_t arr_idx;
+
+        mPrimitiveTypes = pSrcMesh->mPrimitiveTypes;
+        mNumVertices = pSrcMesh->mNumVertices;
+        mNumFaces = pSrcMesh->mNumFaces;
+        mNumBones = pSrcMesh->mNumBones;
+        mMaterialIndex = pSrcMesh->mMaterialIndex;
+        mName = pSrcMesh->mName;
+        mNumAnimMeshes = pSrcMesh->mNumAnimMeshes;
+        mMethod = pSrcMesh->mMethod;
+        mAABB = pSrcMesh->mAABB;
+        // Vertices-linked data.
+        mVertices = aiVector3D::CopyOfArray(pSrcMesh->mVertices, pSrcMesh->mNumVertices);
+        mNormals = aiVector3D::CopyOfArray(pSrcMesh->mNormals, pSrcMesh->mNumVertices);
+        mTangents = aiVector3D::CopyOfArray(pSrcMesh->mTangents, pSrcMesh->mNumVertices);
+        mBitangents = aiVector3D::CopyOfArray(pSrcMesh->mBitangents, pSrcMesh->mNumVertices);
+
+        arr_idx = 0;
+        do
+        {
+            mColors[arr_idx] = aiColor4D::CopyOfArray(pSrcMesh->mColors[arr_idx], pSrcMesh->mNumVertices);
+        } while(arr_idx++ < AI_MAX_NUMBER_OF_COLOR_SETS);
+
+        arr_idx = 0;
+        while(arr_idx++ < AI_MAX_NUMBER_OF_TEXTURECOORDS)
+        {
+            mNumUVComponents[arr_idx] = pSrcMesh->mNumUVComponents[arr_idx];
+            mTextureCoords[arr_idx] = aiVector3D::CopyOfArray(pSrcMesh->mTextureCoords[arr_idx], pSrcMesh->mNumVertices);
         }
 
-        // DO NOT REMOVE THIS ADDITIONAL CHECK
-        if (mNumBones && mBones)    {
+        mFaces = aiFace::CopyOfArray(pSrcMesh->mFaces, pSrcMesh->mNumFaces);
+        mBones = aiBone::CopyOfArrayPtr(pSrcMesh->mBones, pSrcMesh->mNumBones);
+        mAnimMeshes = aiAnimMesh::CopyOfArrayPtr(pSrcMesh->mAnimMeshes, pSrcMesh->mNumAnimMeshes);
+    }
+
+    //! Deletes all storage allocated for the mesh
+    ~aiMesh() {
+        if(mVertices != nullptr) delete [] mVertices;
+        if(mNormals != nullptr) delete [] mNormals;
+        if(mTangents != nullptr) delete [] mTangents;
+        if(mBitangents != nullptr) delete [] mBitangents;
+
+        for( unsigned int a = 0; a < AI_MAX_NUMBER_OF_TEXTURECOORDS; a++) {
+            if(mTextureCoords[a] != nullptr)
+                delete [] mTextureCoords[a];
+        }
+        for( unsigned int a = 0; a < AI_MAX_NUMBER_OF_COLOR_SETS; a++) {
+            if(mColors[a] != nullptr)
+                delete [] mColors[a];
+        }
+
+        if (mBones != nullptr) {
+            // mBones can be created and hold zero elements.
             for( unsigned int a = 0; a < mNumBones; a++) {
-                delete mBones[a];
+                if(mBones[a] != nullptr)
+                    delete mBones[a];
             }
+
             delete [] mBones;
         }
 
-        if (mNumAnimMeshes && mAnimMeshes)  {
+        if (mAnimMeshes != nullptr)  {
             for( unsigned int a = 0; a < mNumAnimMeshes; a++) {
-                delete mAnimMeshes[a];
+                if(mAnimMeshes[a] != nullptr)
+                    delete mAnimMeshes[a];
             }
+
             delete [] mAnimMeshes;
         }
 
-        delete [] mFaces;
+        if(mFaces != nullptr) delete [] mFaces;
+
     }
 
     //! Check whether the mesh contains positions. Provided no special
